@@ -1090,45 +1090,65 @@ export default function Page() {
     }));
   }
 
-  function validateCurrentStep() {
-    let ok = true;
-    let firstBad: HTMLElement | null = null;
-    const nextErrors: Record<string, boolean> = {};
+function validateCurrentStep() {
+  let ok = true;
+  let firstBadSelector: string | null = null;
 
-    visibleQuestions.forEach((question) => {
-      if (!question.required) return;
+  const nextErrors: Record<string, boolean> = {};
 
-      const value = state[question.key];
-      let good = true;
+  visibleQuestions.forEach((question) => {
+    if (!question.required) return;
 
-      if (question.type === "multi") {
-        good = Array.isArray(value) && value.length > 0;
-      } else if (question.type === "phone") {
-        good = /^[6-9]\d{9}$/.test(value || "");
-      } else if (question.type === "email") {
-        good = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(value || "");
-      } else {
-        good = !!(value && String(value).trim().length > 1);
-      }
+    const value = state[question.key];
 
-      nextErrors[String(question.key)] = !good;
+    let good = true;
 
-      if (!good && !firstBad) {
-        firstBad = document.querySelector(
-          `.q[data-key="${String(question.key)}"]`,
-        );
-        ok = false;
-      }
-    });
+    if (question.type === "multi") {
+      good = Array.isArray(value) && value.length > 0;
+    } else if (question.type === "phone") {
+      const phoneValue =
+        typeof value === "string" ? value : "";
 
-    setErrors(nextErrors);
+      good = /^[6-9]\d{9}$/.test(phoneValue);
+    } else if (question.type === "email") {
+      const emailValue =
+        typeof value === "string" ? value : "";
 
-    if (firstBad) {
-      firstBad.scrollIntoView({ behavior: "smooth", block: "center" });
+      good = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(
+        emailValue
+      );
+    } else {
+      good =
+        typeof value === "string" &&
+        value.trim().length > 1;
     }
 
-    return ok;
+    nextErrors[String(question.key)] = !good;
+
+    if (!good && !firstBadSelector) {
+      firstBadSelector =
+        `.q[data-key="${String(question.key)}"]`;
+
+      ok = false;
+    }
+  });
+
+  setErrors(nextErrors);
+
+  if (firstBadSelector) {
+    const firstBad =
+      document.querySelector<HTMLElement>(
+        firstBadSelector
+      );
+
+    firstBad?.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    });
   }
+
+  return ok;
+}
 
   function goToStep(nextStep: number) {
     setStep(nextStep);
